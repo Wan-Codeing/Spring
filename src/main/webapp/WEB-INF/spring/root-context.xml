@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:mvc="http://www.springframework.org/schema/mvc"
+	xsi:schemaLocation="http://www.springframework.org/schema/mvc http://www.springframework.org/schema/mvc/spring-mvc-4.3.xsd
+		http://www.springframework.org/schema/beans https://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-4.3.xsd">
+	
+	<!-- Root Context: defines shared resources visible to all other web components -->
+	<!-- 
+		root-context.xml
+		서버 구동과 동시에 web.xml파일을 거쳐서 바로 로됭되는 문서
+		- 보통 서버구동과 동시에 세팅해야하는 내용들을 작성한다
+	 -->
+	 <!-- 
+	 	properties 파일을 읽어와서 key, value형태ㅑ로 얻어올수 있음
+	  -->
+	 <context:property-placeholder location="classpath:datasource.properties"/>
+	 
+	 
+	 <!-- DB연결 설정 -->
+	 <!-- 1단계. DB연결을 위한 도구 설정 -->
+	 <bean class="org.apache.commons.dbcp.BasicDataSource" id="realDataSource" destroy-method="close">
+ 		<property name="driverClassName" value="${driverClassName}"/>
+ 		<property name="url" value="${url}"/>
+ 		<property name="username" value="${dataSource.username}"/>
+ 		<property name="password" value="${dataSource.password}"/>
+	 </bean>
+	 
+	 <!-- 위 Datasource빈을 이용해서 proxyDataSource 생성 -->
+	 <bean id="dataSource" class="net.sf.log4jdbc.Log4jdbcProxyDataSource">
+	 	<constructor-arg ref="realDataSource"/>
+	 	<property name="logFormatter">
+	 		<bean class="net.sf.log4jdbc.tools.Log4JdbcCustomFormatter">
+	 			<property name="loggingType" value="MULTI_LINE"/>
+	 			<property name="sqlPrefix" value="[SQL]"/>
+	 		</bean>
+	 	</property>
+	 </bean>
+	 <!-- 
+	 	BasicDataSource dataSource = new BasicDataSource();
+	 	dataSource.setDriverClassName("oracle.jdbc.driver.oracleDriver");
+	 	dataSource.setUrl("jdbc:oracle:thin:@localhost:1521:xe");
+	 	...
+	  -->	
+	  
+	  <!-- 2단계. MyBatis Spring에서 제공하는 SQL명령어 실행을 윟나 도구 등록 -->
+	  <bean class="org.mybatis.spring.SqlSessionFactoryBean" id="sqlSessionFactory">
+		<!-- myBati설정파일 위치를 지정 -->
+		<property name="configLocation" value="classpath:mybatis-config.xml"/>
+		<!-- DB연결을 위한 도구 등록
+			name="dataSource" ref="dataSource"
+			ref는 위에선선언한 dataSource 빈 객체를 의미한다
+		 -->
+		<property name="dataSource" ref="dataSource"/>
+		<!-- Mapper등록 
+			앞으로 생성할 모든 mapper파일을 한번에 읽어오는 구문
+			classPath: target/classes를 의미함. 소스폴더에 있는 모든 파일들은 target안으로 자동 빌드됨
+		-->
+		<property name="mapperLocations" value="classpath*:mapper/**/*.xml"/>	  
+	  </bean>
+	  
+	  <!-- 3단계. SQL구문 실행을 위한 템플릿을 제공하는 도구 등록
+	  			SqlSessionTemplate : SqlSession인터페이스를 구현한 클래스,
+	  			여러 DAO에서 공유하면서 사용할 예정
+	   -->
+	  <bean class="org.mybatis.spring.SqlSessionTemplate" id="sqlSession">
+	  	<constructor-arg ref="sqlSessionFactory"/>
+	  </bean>
+	  
+	  <bean id="transactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+	  		<property name="dataSource" ref="dataSource"/>
+	  </bean>
+	  <!-- DB연결 끝 -->
+	  
+	  <bean id="multipartResolver" class="org.springframework.web.multipart.commons.CommonsMultipartResolver">
+	  	<!-- 업로드 되는 파일에 대한 인코딩 처리 -->
+	  	<property name="defaultEncoding" value="UTF-8"/>
+	  	<!-- 
+	  		maxUploadSize : 한번에 전체 업롣되는 파일의 총 용량 설정
+	  		maxInMemorySize : 디스크에 임시파일을 생성하기전에 메모리에 보관할수 있는 최대바이트 크기
+	  	 -->
+	  	<property name="maxUploadSize" value="10000000"/>
+	  	<property name="maxInMemorySize" value="10000000"/>
+	  </bean>
+	  
+	  <!-- 
+	  	스프링 요청/응답 흐름
+	  	요청 -> Filter -> DispatcherServlet(HandlerMapping) -> Interceptor -> Controller -> Service -> DAO -> DB
+		응답	<- Filter <- DispatcherServlet(HandlerMapping) <- Interceptor <- Controller <- Service <- DAO  <ㅡ┘																						  
+	   -->
+</beans>

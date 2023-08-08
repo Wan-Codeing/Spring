@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans:beans xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:beans="http://www.springframework.org/schema/beans"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:mvc="http://www.springframework.org/schema/mvc"
+	xmlns:tx="http://www.springframework.org/schema/tx"
+	xsi:schemaLocation="http://www.springframework.org/schema/mvc https://www.springframework.org/schema/mvc/spring-mvc.xsd
+		http://www.springframework.org/schema/beans https://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/context https://www.springframework.org/schema/context/spring-context.xsd
+		http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-4.3.xsd">
+
+	<!-- DispatcherServlet Context: defines this servlet's request-processing infrastructure -->
+	
+	<!-- @Controller, @Service, @Repository, @Component ... 어노테이션을 사용 가능하도록 활성화 해주는 설정 -->
+	<mvc:annotation-driven />
+
+	<!-- 
+		정적인 파일들에 대한 요청을 mapping해줌
+		/resources/* : /resources/a.jpg , /resources
+		/resources/** : /resources/a.jpg , /resources , /resources/img/b.jpg
+	 -->
+	<mvc:resources mapping="/resources/**" location="/resources/" />
+
+	<!-- 
+		주소 자동완성 도구
+		매번 같은주소(/WEB-INF/views/)를 추가해야하기 때문에 주소자동완성기능이 기본적으로 등록되어있음
+		- view resolver라는 도구를 등록(spring에서 제공)
+		- class : InternalResourceViewResolver
+		- prefix : 접두어/ suffix : 접미어
+		- 문자열값을 return할때 해당 문자열에 접두어, 접미어를 붙여서 포워딩을 시켜준다.
+	 -->
+	<beans:bean class="org.springframework.web.servlet.view.InternalResourceViewResolver">
+		<beans:property name="prefix" value="/WEB-INF/views/" />
+		<beans:property name="suffix" value=".jsp" />
+	</beans:bean>
+	
+	<!-- 
+	  base-package에 등록된 패키지와 그 하위에 존재하는 모든 패키지를 scan(감시)해서 bean으로 등록가능한 클래스가 있다면 모두 등록 시키겠다.
+      bean? 스프링 프레임워크에서 관리하는 자바 객체. 딱 1개만 생성해서 관리.
+	 -->
+	<context:component-scan base-package="com.kh.spring" />
+	
+	<!-- ================================================= 기본셋팅 끝 ========================================================== -->
+	
+	<!-- 비동기 요청처리를 위한 jsonView Bean객체등록 -->
+	
+	<beans:bean id="viewResolver" class="org.springframework.web.servlet.view.BeanNameViewResolver">
+		<beans:property name="order" value="1"/> <!-- 처리순서 1로 우선처리되도록 하고, 올바른 bean을 찾지 못한경우 위의 InternalResourceViewResolver가 대신 처리하게끔 한다 -->
+	</beans:bean>
+	
+	<beans:bean id="jsonView" class="net.sf.json.spring.web.servlet.view.JsonView">
+		<beans:property name="contentType" value="application/json;charset=UTF-8"/>
+	</beans:bean>
+	
+	<!-- @ResponseBody를 사용할때 자바의 객체형태의 데이터를 자동으로 JSON형태로 변환해줄 Bean객체 -->
+	<beans:bean id="jacksonMessageConverter"
+			class="org.springframework.http.converter.json.MappingJackson2HttpMessageConverter"/>
+	<!-- =========== Intercepter 시작 ========== -->
+	  
+	  <!-- 
+	  	Interceptor : 디스패쳐서블렛에서 컨트롤러에 요청을 전달할때 전/후로 나눠서 해당 인터셉터가 중간에 요청을 가로채게됨
+	  				  스프링의 모든 빈객체에 접근이 가능하며 일반적으로 로그인체크, 권한체크, 프로그램실행 시간 체크, 로그확인시 사용된다.
+	   -->
+	  <mvc:interceptors>
+	  	<mvc:interceptor>
+	  		<mvc:mapping path="/**"/>
+	  			<beans:bean class="com.kh.spring.common.interceptor.LoggingInterceptor"/>
+	  	</mvc:interceptor>
+	  
+        <mvc:interceptor>
+			<mvc:mapping path="/**"/>
+		  		<beans:bean class="com.kh.spring.common.interceptor.BoardTypeInterceptor"/>
+		</mvc:interceptor>
+
+		<mvc:interceptor>
+			<mvc:mapping path="/board/insert"/>
+			<mvc:mapping path="/board/update"/>
+			<beans:bean class="com.kh.spring.common.interceptor.LoginInterceptor"/>
+		</mvc:interceptor>
+	  </mvc:interceptors>
+	  <!-- =========== Intercepter 끝 ========== -->
+	  
+	  <!-- 트랙잭션 처리 시작 -->
+	  	<!-- 
+	  		트랜잭션 처리시 스프링에서는 @Transactional어노테이션을 사용해야함
+	  		@Transactional : 클래스 혹은 메서드 수행 후에 트랜잭션을 처리하라고 알려준느 어노테이션
+	  	 -->
+	  	<tx:annotation-driven transaction-manager="transactionManager"/> 
+	  <!-- 트랙잭션 처리 끝 -->
+</beans:beans>
