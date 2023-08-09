@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -28,7 +29,9 @@ import com.kh.spring.member.model.service.MemberService;
 import com.kh.spring.member.model.validator.MemberValidator;
 import com.kh.spring.member.model.vo.Member;
 
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @Controller
 // Controller 타입의 어노테이션을붙여주면 빈 스캐너가 자동으로 빈으로 등록해줌(servlet-context.xml안에 있는 <context:component-scan>태그)
 @SessionAttributes({"loginUser"})
@@ -376,5 +379,13 @@ public class MemberController {
 		return res;
 	}
 	
+//	@Scheduled(fixedDelay = 1000) // 고정방식
+	public void test() {
+		log.info("1초마다 출력");
+	}
+	
+	public void testCron() {
+		log.info("크크크크킄");
+	}
 	
 }

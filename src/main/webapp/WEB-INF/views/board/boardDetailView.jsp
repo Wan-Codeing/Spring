@@ -36,6 +36,7 @@
 							<tr>
 								<th>첨부파일</th>
 								<td>
+									<img src="${contextPath}${attach.filePath}${attach.changeName}">
 									<button type="button" class="btn btn-outline-success btn-block" onclick="location.href='${contextPath}/board/fileDownload/${attach.fileNo}'">
 										${attach.originName} - 다운로드
 									</button>

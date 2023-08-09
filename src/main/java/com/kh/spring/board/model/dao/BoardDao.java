@@ -70,4 +70,24 @@ public class BoardDao {
 	public List<Reply> selectReplyList(int bno){
 		return sqlSession.selectList("boardMapper.selectReplyList",bno);
 	}
+	
+	public Attachment selectAttachment(int fileNo) {
+		return sqlSession.selectOne("boardMapper.selectAttachment",fileNo);
+	}
+	
+	public int updateBoard(Board b) {
+		return sqlSession.update("boardMapper.updateBoard",b);
+	}
+	
+	public int deleteAttachment(Map<String,Object> map){
+		return sqlSession.delete("boardMapper.deleteAttachment",map);
+	}
+	
+	public int updateAttachment(Attachment at) {
+		return sqlSession.update("boardMapper.updateAttachment",at);
+	}
+	
+	public List<String> selectFileList(){
+		return sqlSession.selectList("boardMapper.selectFileList");
+	}
 }

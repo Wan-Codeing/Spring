@@ -1,11 +1,14 @@
 package com.kh.spring.board.model.service;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.kh.spring.board.model.dao.BoardDao;
 import com.kh.spring.board.model.vo.Attachment;
@@ -75,6 +78,73 @@ public class BoardServiceImpl implements BoardService{
 		return result;
 	}
 	
+	@Transactional(rollbackFor = {Exception.class})
+	   @Override
+	   public int updateBoard(Board b, List<MultipartFile> list, String serverFolderPath, String webPath, String deleteList) throws Exception{
+	      
+	      // 1) XSS, 개행문자 처리
+	      b.setBoardTitle(Utils.XSSHandleing(b.getBoardTitle()));
+	      b.setBoardContent(Utils.XSSHandleing(b.getBoardContent()));
+	      b.setBoardContent(Utils.newLineHandling(b.getBoardContent()));
+	      
+	      // 2) 게시글 업데이트 수정
+	      int result = boardDao.updateBoard(b);
+	      
+	      if(result> 0) {
+	         
+	         // 3) 업로드된 파일들 분류작업.
+	         List<Attachment> attachList = new ArrayList<Attachment>();
+	         
+	         if(list != null) {
+	            for(int i =0; i<list.size(); i++) {
+	               
+	               if(!list.get(i).isEmpty()) {
+	                  
+	                  // 변경된 파일명 저장
+	                  String changeName = Utils.saveFile(list.get(i), serverFolderPath);
+	                  
+	                  // Attachment객체를 생성해서 값을 추가한 후 attachList에 추가.
+	                  Attachment at = Attachment
+	                              .builder()
+	                              .refBno(b.getBoardNo())
+	                              .fileLevel(i)
+	                              .originName(list.get(i).getOriginalFilename())
+	                              .changeName(changeName)
+	                              .filePath(webPath)
+	                              .build();
+	                  attachList.add(at);
+	               }
+	            }
+	         }
+	         
+	         // 4) x버튼을 눌렀을때 이미지를 db에서 삭제
+         	if(deleteList != null && !deleteList.equals("")) {
+         		// 삭제하기위해서 refBno, deletelist가 필요
+         		Map<String,Object> map = new HashMap<String, Object>();
+         		map.put("boardNo",b.getBoardNo());
+         		map.put("deleteList", deleteList);
+         		
+         		result = boardDao.deleteAttachment(map);
+         	}
+	         // 5) db에서 삭제에 성공했다면
+	         if(result > 0) {
+	        	 
+	        	 for( Attachment at : attachList) {
+	        		 result = boardDao.updateAttachment(at);
+	        		 
+	        		 // result = 0 > 수정실패 > 기존의 첨부파일 존재 X
+	        		 // result = 1 > 수정성공 > 기존의 첨부파일 존재 O
+	        		 
+	        		 //6) 결과값이 0인경우 업데이트에는 실패했지만, 실제 db에 올라간 첨부파일 정보를 등록해야하기때문에 insert
+	        		 if(result == 0) {
+	        			 result = boardDao.insertAttachment(at);
+	        		 }
+	        	 }
+	         }
+	      }
+	      return result;
+	   }
+	
 	public int insertAttachment(Attachment attach) {
 		return boardDao.insertAttachment(attach);
 	}
@@ -98,4 +168,16 @@ public class BoardServiceImpl implements BoardService{
 	public List<Reply> selectReplyList(int bno){
 		return boardDao.selectReplyList(bno);
 	}
+	
+	@Override
+	public Attachment selectAttachment(int fileNo) {
+		return boardDao.selectAttachment(fileNo);
+	}
+	
+	@Override
+	public  List<String> selectFileList(){
+		//return boardDao.selectFileList();
+		return new
+	}
+	
 }

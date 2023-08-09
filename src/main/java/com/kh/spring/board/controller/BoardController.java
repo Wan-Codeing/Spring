@@ -1,6 +1,7 @@
 package com.kh.spring.board.controller;
 
 import java.io.File;
+import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -13,7 +14,11 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -37,7 +42,6 @@ import com.kh.spring.common.vo.PageInfo;
 import com.kh.spring.member.model.vo.Member;
 
 import lombok.extern.slf4j.Slf4j;
-import oracle.net.aso.s;
 
 @Slf4j
 @Controller
@@ -90,6 +94,20 @@ public class BoardController {
 		return "board/boardEnrollForm";
 	}
 	
+	@GetMapping("/update/{boardCode}/{boardNo}")
+	public String updateFormBoard(
+			@PathVariable("boardCode") String boardCode,
+			@PathVariable("boardNo") int boardNo,
+			Model model
+			) {
+		BoardExt board= boardService.selectBoard(boardNo);
+		board.setBoardContent(Utils.newLineClear(board.getBoardContent()));
+		
+		model.addAttribute("board",board);
+		return "board/boardUpdateForm";
+	}
+	
+	
 	@PostMapping("insert/{boardCode}")
 	public String insertBoard(Board b, @RequestParam(value="upfile" , required=false) List<MultipartFile> upfiles,
 			@PathVariable("boardCode") String boardCode, Model model, @ModelAttribute("loginUser") Member loginUser,
@@ -117,15 +135,20 @@ public class BoardController {
 		
 		List<Attachment> attachList = new ArrayList();
 		
+		int level = -1;
+		
 		for( MultipartFile upfile : upfiles ) {
+			level++;
 			if(upfile.isEmpty()) {
 				continue;
 			}
 			// 1. 파일명 재정의해주는 함수
 			String changeName = Utils.saveFile(upfile, severFolderPath);
-			Attachment at = new Attachment();
-			at.setChangeName(changeName);
-			at.setOriginName(upfile.getOriginalFilename());
+			Attachment at =  Attachment.builder()
+							.changeName(changeName)
+							.originName(upfile.getOriginalFilename())
+							.fileLevel(level)
+							.build();
 			attachList.add(at);
 		}
 		
@@ -141,6 +164,48 @@ public class BoardController {
 			return "redirect:/board/list/"+boardCode;
 		}else {
 			model.addAttribute("errorMsg","게시글 작성 실패 ! ㅠㅠㅠㅠ다시해봐...");
+			return "common/errorPage";
+		}
+	}
+	
+	@PostMapping("/update/{boardCode}/{boardNo}")
+	public String updateBoard(
+			Board b, 
+			@RequestParam(value="upfile", required = false) List<MultipartFile> upfiles,
+			@PathVariable("boardCode") String boardCode,
+			@PathVariable("boardNo") int boardNo,
+			HttpSession session,
+			Model model,
+			@RequestParam(value="deleteList", required=false) String deleteList 
+			) {
+		// 이미지, 파일을 저장할 저장경로
+
+		// / resources/images/board/{boardCode}/
+		String webPath = "/resources/images/board/"+boardCode+"/";
+		String severFolderPath = application.getRealPath(webPath);
+		
+		// Board객체에 데이터 추가(boardCode, boardWriter)
+		Member loginUser = (Member) session.getAttribute("loginUser");
+		b.setBoardWriter(loginUser.getUserNo()+"");
+		b.setBoardCd(boardCode);
+		b.setBoardNo(boardNo);
+		
+		log.info("board =================== {}", b);
+		log.info("deleteList =============== {}", deleteList);
+		int result = 0;
+		
+		
+		try {
+			result = boardService.updateBoard(b, upfiles, severFolderPath, webPath, deleteList);
+		} catch (Exception e) {
+			log.error("error = {}", e.getMessage());
+		}
+		
+		if(result > 0) {
+			session.setAttribute("alertMsg", "게시글 수정 성공! ㅊㅋㅊㅋ");
+			return "redirect:/board/detail/"+boardCode+"/"+boardNo;
+		}else {
+			model.addAttribute("errorMsg","게시글 수정 실패 ! ㅠㅠㅠㅠ다시해봐...");
 			return "common/errorPage";
 		}
 	}
@@ -252,6 +317,39 @@ public class BoardController {
 		return boardService.selectReplyList(bno);
 		
 	}
+	
+	@GetMapping("/fileDownload/{fileNo}")
+	public ResponseEntity<Resource> fileDownlad(
+			@PathVariable("fileNo") int fileNo
+			) throws UnsupportedEncodingException{
+		ResponseEntity<Resource> responseEntity = null;
+		// 1. db에서 Attachment에서 fileNo 매개변수로 전달받은 fileNo와 일치하는 행 조회
+		Attachment at = boardService.selectAttachment(fileNo);
+		log.info("at === {}", at);
+		if(at==null) {
+			return responseEntity.notFound().build();// status code 404
+		}
+		
+		// 2. Resource 객체 얻어오기
+		String saveDirectory = application.getRealPath(at.getFilePath());
+		File downFile = new File(saveDirectory, at.getChangeName());
+		Resource resource = resourceLoader.getResource("file:"+downFile);
+		// getResource : 파일의 위치, 내용을 읽어올수 있음
+		String filename = new String(at.getOriginName().getBytes("utf-8"), "iso-8859-1");
+		// 한글깨짐 방지 처리(utf-8로 전달시 한글이 꺠질수있음)
+		
+		// 3. responseEntity 객체 생성 및 리턴
+		responseEntity = ResponseEntity.ok()
+				// 컨텐츠 타입 : ex) html, json, xml ... 내가 넘겨주고자하는 데이터가 바이너리형식의 데이터임을 의미
+				.header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_OCTET_STREAM_VALUE)
+				// attachment => 파일을 첨부파일형태로 처리하겠다(다운로드) 
+				.header(HttpHeaders.CONTENT_DISPOSITION,"attachment;filename="+filename)
+				.body(resource);
+		
+		return responseEntity;
+	}
+	
+
 	
 }
 

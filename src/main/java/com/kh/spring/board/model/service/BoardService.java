@@ -3,6 +3,8 @@ package com.kh.spring.board.model.service;
 import java.util.List;
 import java.util.Map;
 
+import org.springframework.web.multipart.MultipartFile;
+
 import com.kh.spring.board.model.vo.Attachment;
 import com.kh.spring.board.model.vo.Board;
 import com.kh.spring.board.model.vo.BoardExt;
@@ -17,4 +19,7 @@ public interface BoardService {
 	public int increaseCount(int bno);
 	public int insertReply(Reply r);
 	public List<Reply> selectReplyList(int bno);
+	public Attachment selectAttachment(int fileNo);
+	public int updateBoard(Board b,List<MultipartFile> list,String severFolderPath,String webPath, String deleteList) throws Exception;
+	public  List<String> selectFileList();
 }
