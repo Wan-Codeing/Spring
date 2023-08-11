@@ -20,28 +20,28 @@
 </head>
 <body>
 	
-	<jsp:include page="/WEB-INF/views/common/header.jsp"/>
-	
+	<jsp:include page="/WEB-INF/views/common/header.jsp"/>	
+
 	<div class="outer">
 		<br>
 		<h2 align="center">회원가입</h2>
 		
-		<form action="<%=request.getContextPath()%>/insert.me" method="post" id="enroll-form">
+		<form id="enroll-form" action="<%=request.getContextPath() %>/insert.me" method="post">
 			<!-- 회원가입form안에.txt -->
 			<table align="center">
 				<tr>
 					<td>* ID</td>
-					<td>
-						<input type="text" name="userId" >
+					<td><input type="text" name="userId" required>
+						<button type="button" onclick="idCheck();">아이디중복체크</button>
 					</td>
 				</tr>
 				<tr>
 					<td>* PWD</td>
-					<td><input type="password" name="userPwd" ></td>
+					<td><input type="password" name="userPwd" required></td>
 				</tr>
 				<tr>
 					<td>* NAME</td>
-					<td><input type="text" name="userName" ></td>
+					<td><input type="text" name="userName" required></td>
 				</tr>
 				<tr>
 					<td>&nbsp;&nbsp;EMAIL</td>
@@ -81,26 +81,32 @@
 			const $userId = $("#enroll-form input[name=userId]");
 			
 			$.ajax({
-				url : "<%=request.getContextPath()%>/idCheck.me",
-				data: {userId : $userId.val()},
+				url : "${pageContext.servletContext.contextPath}/idCheck.me",
+				data : {
+					userId : $userId.val()
+				},
 				success : function(result){
 					console.log(result);
-					if(result == 1){ // 사용불가
-						alert("종이 한장 차이로 뺏김...ㅈㅅ");
+					if(result == 1){ // 사용중
+						alert("이미 사용중인 아이디입니다.");
 						$userId.val("");
 						$userId.focus();
-					} else{ //사용가능
-						if(confirm("사용가능한 아이디입니다. 사용하시겠습니까??")){ // 사용
-							$userId.attr("readonly",true);//아이디값 확정
-						}else{ // 사용안함
-							$uesrId.focus();
-						}
+					}else{ // 사용안함
+						alert("사용 가능한 아이디입니다.");
 					}
 				}
-			});
-			
+			})
 		}
 	</script>
+
+
+
+
+
+
+
+
+
 
 	<jsp:include page="/WEB-INF/views/common/footer.jsp"/>
 </body>

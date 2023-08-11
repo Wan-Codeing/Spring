@@ -4,10 +4,10 @@ import lombok.Data;
 
 @Data
 public class Reply {
-	private int replyNo;
-	private String replyContent;
-	private int refBno;
-	private String replyWriter;
-	private String createDate;
-	private String status;
+private int replyNo;//	REPLY_NO
+private String replyContent;//	REPLY_CONTENT
+private int refBno; //	REF_BNO
+private String replyWriter;//	REPLY_WRITER
+private String createDate;//	CREATE_DATE
+private String status;//	STATUS
 }

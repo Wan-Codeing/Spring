@@ -4,29 +4,32 @@
 	xmlns:context="http://www.springframework.org/schema/context"
 	xmlns:mvc="http://www.springframework.org/schema/mvc"
 	xmlns:tx="http://www.springframework.org/schema/tx"
-	xsi:schemaLocation="http://www.springframework.org/schema/mvc https://www.springframework.org/schema/mvc/spring-mvc.xsd
+	xmlns:websocket="http://www.springframework.org/schema/websocket"
+	xmlns:aop="http://www.springframework.org/schema/aop"
+	xsi:schemaLocation="http://www.springframework.org/schema/websocket http://www.springframework.org/schema/websocket/spring-websocket-4.3.xsd
+		http://www.springframework.org/schema/mvc https://www.springframework.org/schema/mvc/spring-mvc.xsd
 		http://www.springframework.org/schema/beans https://www.springframework.org/schema/beans/spring-beans.xsd
 		http://www.springframework.org/schema/context https://www.springframework.org/schema/context/spring-context.xsd
+		http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop-4.3.xsd
 		http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-4.3.xsd">
 
 	<!-- DispatcherServlet Context: defines this servlet's request-processing infrastructure -->
 	
-	<!-- @Controller, @Service, @Repository, @Component ... 어노테이션을 사용 가능하도록 활성화 해주는 설정 -->
+	<!-- @Controller , @Service, @Repository, @Component ... 어노테이션을 사용가능하도록 활성화 해주는 설정 -->	
 	<mvc:annotation-driven />
-
 	<!-- 
-		정적인 파일들에 대한 요청을 mapping해줌
-		/resources/* : /resources/a.jpg , /resources
+		정적인 파일들에 대한 요청을 mapping해줌.
+		/resources/*  : /resources/a.jpg , /resources
 		/resources/** : /resources/a.jpg , /resources , /resources/img/b.jpg
 	 -->
 	<mvc:resources mapping="/resources/**" location="/resources/" />
-
+	
 	<!-- 
 		주소 자동완성 도구
-		매번 같은주소(/WEB-INF/views/)를 추가해야하기 때문에 주소자동완성기능이 기본적으로 등록되어있음
+		매번 같은주소(/WEB-INF/views/)를 추가해야하기 때문에 주소자동완성기능이 기본적으로 등록되어있음.
 		- view resolver라는 도구를 등록(spring에서 제공)
 		- class : InternalResourceViewResolver
-		- prefix : 접두어/ suffix : 접미어
+		- prefix : 접두어 / suffix : 접미어
 		- 문자열값을 return할때 해당 문자열에 접두어, 접미어를 붙여서 포워딩을 시켜준다.
 	 -->
 	<beans:bean class="org.springframework.web.servlet.view.InternalResourceViewResolver">
@@ -35,56 +38,146 @@
 	</beans:bean>
 	
 	<!-- 
-	  base-package에 등록된 패키지와 그 하위에 존재하는 모든 패키지를 scan(감시)해서 bean으로 등록가능한 클래스가 있다면 모두 등록 시키겠다.
-      bean? 스프링 프레임워크에서 관리하는 자바 객체. 딱 1개만 생성해서 관리.
-	 -->
+		base-package에 등록된 패키지와 그 하위에 존재하는 모든 패키지를 scan(감시)해서 bean으로 등록가능한 클래스가 있다면
+		모두 등록 시키겠다.
+		
+		bean? 스프링 프레임워크에서 관리하는 자바 객체. 딱 1개만 생성해서 관리.
+	 -->	
 	<context:component-scan base-package="com.kh.spring" />
 	
-	<!-- ================================================= 기본셋팅 끝 ========================================================== -->
+	<!-- =============================== 기본셋팅 끝========================================================= -->
 	
-	<!-- 비동기 요청처리를 위한 jsonView Bean객체등록 -->
+	<!--  비동기 요청처리를 위한 jsonView Bean객체등록. -->
 	
 	<beans:bean id="viewResolver" class="org.springframework.web.servlet.view.BeanNameViewResolver">
-		<beans:property name="order" value="1"/> <!-- 처리순서 1로 우선처리되도록 하고, 올바른 bean을 찾지 못한경우 위의 InternalResourceViewResolver가 대신 처리하게끔 한다 -->
+		<beans:property name="order" value="1"/> <!-- 처리순서는 1로 우선처리되도록 하고, 올바른 bean을 찾지 못한 경우
+		                                              위의 InternalResourceViewResolver가 대신 처리하게끔 한다. -->
 	</beans:bean>
 	
 	<beans:bean id="jsonView" class="net.sf.json.spring.web.servlet.view.JsonView">
-		<beans:property name="contentType" value="application/json;charset=UTF-8"/>
+		<beans:property name="contentType" value="application/json;charset=UTF-8" />
 	</beans:bean>
 	
 	<!-- @ResponseBody를 사용할때 자바의 객체형태의 데이터를 자동으로 JSON형태로 변환해줄 Bean객체 -->
 	<beans:bean id="jacksonMessageConverter"
-			class="org.springframework.http.converter.json.MappingJackson2HttpMessageConverter"/>
-	<!-- =========== Intercepter 시작 ========== -->
+	        class="org.springframework.http.converter.json.MappingJackson2HttpMessageConverter"/>
+	
+	 
+	 <!-- ====================== Intercepter 시작 =============== -->
+	 
+	 <!-- 
+	 	Interceptor : 디스패쳐서빌릇에서 컨트롤러에 요청을 전달할때 전/후로 나눠서 해당 인터셉터가 중간에 요청을
+	 	가로채게됨. 스프링의 모든 빈객체에 접근이 가능하며 일반적으로 로그인체크, 권한체크, 프로그램 실행시간체크, 로그확인시
+	 	사용된다.
+	  -->
+	  
+	 <mvc:interceptors>
+	 	<mvc:interceptor>
+	 		<mvc:mapping path="/**"/>
+	 		<!-- 
+	 			<mvc:exclude-mapping path="/board/list/C"/> 특정 URL 제외	 		
+	 		 -->
+	 		<beans:bean class="com.kh.spring.common.interceptor.LoggingInterceptor"/>
+	 	</mvc:interceptor>
+	 	
+	 	<mvc:interceptor>
+	 		<mvc:mapping path="/**"/>
+	 		<beans:bean class="com.kh.spring.common.interceptor.BoardTypeInterceptor"/>
+	 	</mvc:interceptor>	
+	 		
+	 	<mvc:interceptor>
+	 		<mvc:mapping path="/board/**"/>
+	 		<mvc:mapping path="/chat/**"/>
+	 		
+	 		<mvc:exclude-mapping path="/chat/chatRoomList"/>
+	 		<mvc:exclude-mapping path="/board/list/*"/>
+	 		<beans:bean class="com.kh.spring.common.interceptor.LoginInterceptor"/>	 		
+	 	</mvc:interceptor>	
+	 		
+	 </mvc:interceptors>
+	 
+	 <!-- ====================== Intercepter 끝 =============== -->
+	 
+	 <!-- 트랜잭션 처리 시작 -->
+	 	<!-- 
+	 		트랜잭션 처리시 스프링에서는 @Transactional어노테이션을 사용해야함.
+	 		@Transactional : 클래스 혹은 매서드 수행 후에 트랜잭셔을 처리하라고 알려주는 어노테이션.
+	 	 -->
+	 	<tx:annotation-driven transaction-manager="transactionManager" />
+	 <!-- 트랜잭션 처리 끝 -->
+	 
+	 <!-- 웹소켓 시작 -->
+	 
+	 <!-- webSocket요청시 해당 요청을 처리해줄 핸들러 클래스 등록 -->
+	 <beans:bean id="chatHandler" class="com.kh.spring.chat.model.websocket.ChatWebsocketHandler"/>
+	 
+	 <websocket:handlers>
+	 
+	 	<!-- 웹소켓 요청주소를 처리할 bean객체 지정 -->
+	 	<websocket:mapping handler="chatHandler" path="/chat"/>
+	 	
+	 	<websocket:handshake-interceptors>
+	 		<!-- 
+	 			interceptor : http통신에 request와 response를 가로채는 역할.
+	 			handshake-interceptors :
+	 				요청 관련 데이터중 httpSession(로그인정보, 채팅방번호)을 가로채서
+	 				WebSocketSession에게 넣어줌.
+	 		 -->
+	 		<beans:bean class="org.springframework.web.socket.server.support.HttpSessionHandshakeInterceptor" />
+	 	</websocket:handshake-interceptors>
+	 	
+		<!--  SockJS라이브러리를 이용해서 만들어진 웹 소켓 객체임을 의미 -->	 	
+	 	<websocket:sockjs/>
+	 </websocket:handlers>	
+	 
+	 <!-- 웹소켓 끝 -->
+	 <!-- 
+	 	proxy-target-class : 프록시 객체 생성시 interface or class로 프록시 객체를 생성할지 정하는 구문.
+	 	기본값 : true -> 프로시 객체를 생성시 "클래스"로 생성함
+	 		   false -> 일반적으로 프록시 객체는 자바에서 기본적으로 제공하는 다이나믹 프록시 interface으로 생성한다.
+	 	클래스로 만들게되면 cglib라이브러리를 이용하여 프록시 객체를 생성하는데 성능상의 이유로 프록시 객체 생성시 interface를 활용하는걸 권장한다.
+	 	
+	 	내가만든 공통 코드, 모듈을 메서드단위로 적용시킬떄 사용을하고, interceptor보다 좀더 세밀한 조정이 필요할떄 사용한다.
+	 	
+	 	Interceptor : dispatcherServlet이 controller를 호출하기 전/후로 끼어들어 실행하기 떄문에 controller에게 전달하기 전의 request, response의 데이터를 처리하기제
+	 				  좋으며, Apllication전역에 사용할 객체에대한 설정을 하기 좋다 
+	 	
+	 	AOP : 주로 "트랜잭션처리(@Transcational)", 로깅처리, 로그인처리등 비즈니스단에 공통적으로 필요한 메서드를 좀더 세밀하게 조정할떄 사용
+	  -->
+	 <aop:aspectj-autoproxy proxy-target-class="false"/>
+	 <!-- 
+		AOP : 주로 트랜잭션처리, 로깅처리, 로그인처리 등 비즈니스단에 공통적으로 필요한 메서드를 좀더 세밀하게 조정할떄 사용	 
+	  -->
+	 <!-- 
+	 	스프링 요청/응답 흐름
+	  요청 -> Filter -> DispatcherServlet(HandlerMapping) -> Interceptor -> Controller -> AOP -> Service -> DAO 
+	  																								        | 
+	  																								        DB
+	  																								       	|
+	  응답 <- Filter <- DispatcherServlet(HandlerMapping) <- Interceptor <- Controller <- AOP <- Service <- DAO
+	  -->
 	  
 	  <!-- 
-	  	Interceptor : 디스패쳐서블렛에서 컨트롤러에 요청을 전달할때 전/후로 나눠서 해당 인터셉터가 중간에 요청을 가로채게됨
-	  				  스프링의 모든 빈객체에 접근이 가능하며 일반적으로 로그인체크, 권한체크, 프로그램실행 시간 체크, 로그확인시 사용된다.
+	  		사용자가 어떤 URL로 요청시 문서가 읽혀지는지
+	  		HandlerMapping을 통해서 url요청이 올경우 어떤 controller구동시킬지 정의해야한다
+	  		
+	  		1. 요청시 실행될 controller클새들을 bean 등록해두기
+	  		<beans:bean class="com.kh.spring.member.MemberController" id="loginController"/>
+	  		// 등록할 컨트롤러 갯수 만큼 bean객체 직접 등록
+	  		
+	  		2. 어떤 url로 요청들어온것을 처리할지 매핑도 직접 해줘야한다
+	  		<beans:bean class="org.springframework.web.servlet.handler.SimpleUrlHandlerMapping">
+	  			<bean:property name="mappings">
+	  				<bean:prop key="login.me">loginController</beans:bean>
+	  				<bean:prop key="lnsert.me">loginController</beans:bean>
+	  			</bean:property>
+	  		</beans:bean>
+	  		
+	  		* HandlerMapping : 요청받은 url주소에 따라 해당 주소를 처리할 컨트롤러를 연결하는 역할
+	  		-> 기존에는 xml방식을 사용했지만/ 최근에는 @RequestMapping / @GetMapping / @PostMapping
 	   -->
-	  <mvc:interceptors>
-	  	<mvc:interceptor>
-	  		<mvc:mapping path="/**"/>
-	  			<beans:bean class="com.kh.spring.common.interceptor.LoggingInterceptor"/>
-	  	</mvc:interceptor>
-	  
-        <mvc:interceptor>
-			<mvc:mapping path="/**"/>
-		  		<beans:bean class="com.kh.spring.common.interceptor.BoardTypeInterceptor"/>
-		</mvc:interceptor>
-
-		<mvc:interceptor>
-			<mvc:mapping path="/board/insert"/>
-			<mvc:mapping path="/board/update"/>
-			<beans:bean class="com.kh.spring.common.interceptor.LoginInterceptor"/>
-		</mvc:interceptor>
-	  </mvc:interceptors>
-	  <!-- =========== Intercepter 끝 ========== -->
-	  
-	  <!-- 트랙잭션 처리 시작 -->
-	  	<!-- 
-	  		트랜잭션 처리시 스프링에서는 @Transactional어노테이션을 사용해야함
-	  		@Transactional : 클래스 혹은 메서드 수행 후에 트랜잭션을 처리하라고 알려준느 어노테이션
-	  	 -->
-	  	<tx:annotation-driven transaction-manager="transactionManager"/> 
-	  <!-- 트랙잭션 처리 끝 -->
+	 
+	
+	
+	
 </beans:beans>

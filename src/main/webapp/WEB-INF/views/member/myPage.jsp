@@ -19,58 +19,62 @@
 </style>
 </head>
 <body>
-<jsp:include page="/WEB-INF/views/common/header.jsp"/>
-<div class="outer">
+	
+	<jsp:include page="/WEB-INF/views/common/header.jsp"/>	
+
+	<div class="outer">
 		<br>
-		<h2 align="center">회원가입</h2>
-		<form action="<%=request.getContextPath()%>/update.me" method="post" id="enroll-form">
+		<h2 align="center">내정보 수정</h2>
+		
+		<form id="enroll-form" action="<%=request.getContextPath() %>/update.me" method="post">
 			<!-- 회원가입form안에.txt -->
 			<table align="center">
 				<tr>
 					<td>* ID</td>
-					<td>
-						<input type="text" name="userId" value="${loginUser.userId}" readonly>
+					<td><input type="text" name="userId" value="${loginUser.userId }" readonly>
 					</td>
 				</tr>
 				<tr>
 					<td>* PWD</td>
-					<td><input type="password" name="userPwd" value="${loginUser.userPwd}" ></td>
+					<td><input type="password" name="userPwd" value="${loginUser.userPwd }"></td>
 				</tr>
 				<tr>
 					<td>* NAME</td>
-					<td><input type="text" name="userName" value="${loginUser.userName}" ></td>
+					<td><input type="text" name="userName" value="${loginUser.userName }" ></td>
 				</tr>
 				<tr>
 					<td>&nbsp;&nbsp;EMAIL</td>
-					<td><input type="email" name="email" value="${loginUser.email}"></td>
+					<td><input type="email" name="email" value="${loginUser.email }"></td>
 				</tr>
 				<tr>
 					<td>&nbsp;&nbsp;BIRTHDAY</td>
-					<td><input type="text" name="birthday" placeholder="생년월일(6자리)" value="${loginUser.birthday}"></td>
+					<td><input type="text" name="birthday" value="${loginUser.birthday }" placeholder="생년월일(6자리)"></td>
 				</tr>
 				<tr>
 					<td>&nbsp;&nbsp;GENDER</td>
 					<td align="center">
-						<input type="radio" name="gender" value="M" ${loginUser.gender == 'M' ? "checked" : "" }> 남
-						<input type="radio" name="gender" value="F" ${loginUser.gender == 'F' ? "checked" : "" }> 여
+						<input type="radio" name="gender" value="M" ${loginUser.gender == 'M'? "checked" : ""}> 남
+						<input type="radio" name="gender" value="F" ${loginUser.gender == 'F'? "checked" : ""}> 여
 					</td>
 				</tr>
 				<tr>
 					<td>&nbsp;&nbsp;PHONE</td>
-					<td><input type="text" name="phone" placeholder="-포함" value="${loginUser.phone}"></td>
+					<td><input type="text" name="phone" placeholder="-포함" value="${loginUser.phone }"></td>
 				</tr>
 				<tr>
 					<td>&nbsp;&nbsp;ADDRESS</td>
-					<td><input type="text" name="address" value="${loginUser.address}"></td>
+					<td><input type="text" name="address" value="${loginUser.address }" ></td>
 				</tr>
 			</table>
 			<br>
 			<div align="center">
 				<button type="reset">초기화</button>
-				<button type="submit">회원수정</button>
+				<button type="submit">수정</button>
 			</div>
 		</form>
 	</div>
-<jsp:include page="/WEB-INF/views/common/footer.jsp"/>
+	
+
+	<jsp:include page="/WEB-INF/views/common/footer.jsp"/>
 </body>
 </html>

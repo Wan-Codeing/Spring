@@ -6,60 +6,72 @@
 	xsi:schemaLocation="http://www.springframework.org/schema/task http://www.springframework.org/schema/task/spring-task-4.3.xsd
 		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
 		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-4.3.xsd">
-
 	<!-- 
 		spring scheduler?
-		매일, 매분, 매초, 매주, 매달, 매년 반복적으로 실행시켜야하는 프로세스가 있는경우
-		스프링 스케줄러를 사용하면 간편하게 셋팅이 가능하다
+			매일, 매분, 매초 매주, 매달 반복적으로 실행시켜야하는 프로세스가 있는경우
+			스프링 스케쥴러를 사용하면 간편하게 셋팅이 가능하다
+	 -->
+
+	<!-- 
+		스프링 스케쥴러 작업순서
+		1. task, context 스키마와 스키마로케이션 등록 => namespaces에서 등록함.
+		2. annotation 활성화
+		3. 스케쥴러로 사용할 클래스를 빈으로 등록.
+		4. web.xml에 프로그램 구동시 필요한 scheduler-context.xml을 등록 => *-context.xml로 등록
+		======
+		5. 스케쥴링을 원하는 메서드에 가서 schedule어노테이션 추가하기
+		6. 원하는 스케쥴링 방식 정의하기
+	 -->
+	 <!-- #3 -->
+	 <context:component-scan base-package="com.kh.spring"></context:component-scan>
+	 
+	 <!-- #2  -->
+	 <task:annotation-driven scheduler="khScheduler" />
+	
+	 <task:scheduler id="khScheduler" pool-size="10" />
+	<!-- 
+		pool-size:: 쓰레드풀 개수 지정. 미지정시 기본값 1
+		메인스레드에 영향을 끼치지 않게하기 위해서 선언. 
 	 -->
 	 
-	 <!-- 
-	 	스프링 스케쥴러 작업순서
-	 	1. task, context 스키마와 스키마로케이션 등록 => namespaces에서 등록함
-	 	2. annotation 활성화
-	 	3. 스케쥴러로 사용할 클래스를 빈으로 등록
-	 	4. web.xml에 프로그램 구동시 리요한 scheduler-context.xml을 등록
-	 	
-	 	5. 스케쥴링을 원하는 메서드에가서 schedule어노테이션 추가하기
-	 	6. 원하는 스케쥴링 방식 정의하기 
-	  -->
-	  <!-- #3 -->
-	  <context:component-scan base-package="com.kh.spring"></context:component-scan>
-	  
-	  <!-- #2 -->
-	  <task:annotation-driven scheduler="khScheduler"/>
-	  
-	  <task:scheduler id="khScheduler" pool-size="10"/>
-	  <!-- 
-	  	pool-size : 쓰레드풀 개수 지정. 미지정시 기본값 1
-	  	메인스레드에 영향을 끼치지 않게하기 위해서 선언
-	   -->
-	   
-	   <task:scheduled-tasks scheduler="khScheduler">
-	   		<!-- 
-	   			ref : bean클래스 이름을 작성하는 부분
-	   			method : 해당클래스에서 스케쥴링할 메서드명
-	   			cron : 
-	   					*	*	*	*	*	*	*
-	   				    초	분	시	일	월	요일	년도
-	   				    * : 모든 값(매시, 매분, 매주, 매초)
-	   				    ? : 어떤값이든 상관없다
-	   				    - : 범위를 지정 24-25
-	   				    , : 여러값을 지정할떄 1,5
-	   				    / : 증분값 , 0/2 => 0초 , 2는 증가치 0초부터 2초단위로 실행
-	   				    L : 지정할수있는 범위의 마지막값 표시
-	   				    W : 가장 가까운 평일을 설정할떄
-	   				    # : N번째 특정요일을 설정할때
-	   				    
-	   				    매일 오전 1시에 실행되게끔 하고 싶다
-	   				    0 0 1 * * *
-	   				    매일 30분마다 실행되게끔 하고 싶다
-	   				    0 30 * * * *
-	   				    
-	   				    크론설정 쉽게해주는 사이트 => 크론메이커
-	   		 -->
-	   		<task:scheduled ref="memberController" method="testCron" cron="1 * * * * *"/>
-	   </task:scheduled-tasks>
-	
-		
+	 <task:scheduled-tasks scheduler="khScheduler">
+	 	<!-- 
+	 		ref : 빈클래스이름을 작성
+	 		method : 해당빈클래스에서 스케쥴링할 메서드명
+	 		cron : 
+	 		       * * * * * * *
+	 		       초 분 시 일 월 요일 년도(생략가능)
+	 		       * : 모든 값(매시, 매분, 매주, 매초)
+	 		       ? : 어떤값이든 생관없다
+	 		       - : 범위를 지정 24-25
+	 		       , : 여러값을지정할때 1,5
+	 		       / : 증분값 , 0/2 -> 0초 , 2는 증가치 0초부터 2초단위로 실행
+	 		       L : 지정할수있는 범위의  마지막값 표시 
+	 		       W : 가장 가까운 평일을 설정할때 
+	 		       # : N번째 특정요일을 설정할때
+	 		       
+	 		       매일 오전1시에 실행되게끔 하고 싶다
+	 		       0 0 1 * * *
+	 		       매일 30분마다 실행되게끔 하고싶다
+	 		       0 30 * * * *
+	 		       
+	 		       크론설정 쉽게해주는 사이트 => 크론메이커
+	 	 -->
+	 	<task:scheduled ref="memberController" method="testCron" cron="1 * * * * *" />
+	 
+	 </task:scheduled-tasks>
+
+
+
+
+
+
+
+
+
+
+
+
 </beans>
+
+
